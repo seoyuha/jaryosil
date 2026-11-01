@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#16201c">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316201c'/%3E%3Ctext x='32' y='43' font-size='30' text-anchor='middle' fill='%236cc5a8' font-family='serif' font-weight='700'%3E자%3C/text%3E%3C/svg%3E">
+
 <title>수업자료실</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -318,6 +319,18 @@ a.ctitle:hover{text-decoration:underline}
 @keyframes pulse{to{opacity:.25}}
 body[data-drop]::after{content:attr(data-drop);position:fixed;inset:12px;z-index:40;border:3px dashed var(--accent);border-radius:18px;background:color-mix(in srgb,var(--accent) 12%,transparent);display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:1.6rem;color:var(--accent);pointer-events:none}
 @media (max-width:900px){.syncst{display:none}}
+/* planner & last year */
+.pcls{display:flex;flex-direction:column;gap:12px;max-height:46vh;overflow-y:auto}
+.pcard{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.ttgrid{display:grid;grid-template-columns:28px repeat(5,minmax(36px,56px));gap:4px;align-items:center;font-size:.75rem;color:var(--muted)}
+.ttgrid b{text-align:center;font-weight:600}
+.tt{height:30px;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:0}
+.tt:hover{border-color:var(--accent)}
+.tt.on{background:var(--accent);border-color:var(--accent)}
+.lastyear{border:1px dashed color-mix(in srgb,var(--note) 45%,var(--line));border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:8px}
+.lyhead{border:0;background:transparent;display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;padding:2px;text-align:left;width:100%}
+.lyrow{display:flex;gap:8px;align-items:center}
+.lyrow .mat{flex:1;min-width:0}
 /* ---------- modal & forms ---------- */
 .overlay{position:fixed;inset:0;background:rgba(10,16,14,.5);z-index:20;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 48px) max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
 .modal{background:var(--paper);border-radius:16px;width:min(580px,100%);padding:22px;display:flex;flex-direction:column;gap:14px;border:1px solid var(--line);box-shadow:var(--shadow)}
@@ -551,7 +564,7 @@ function weekDetail(){
   const {month,week}=S.week;const i=widx(S.week);const prev=WEEKS[i-1],next=WEEKS[i+1];
   const secs=Object.entries(CATS).filter(([k])=>S.cat==="all"||S.cat===k).map(([k,v])=>{const place={kind:"weekly",year:S.year,month,week,cat:k};const ms=matsAt(place);
     return `<section class="catsec"><h3><span class="b ${k}">${v.short}</span> ${v.name} <span class="hint num">${ms.length}개</span></h3>${gallery(ms,{tight:true,scope:`w|${month}|${week}|${k}`,addPlace:place,addLabel:"넣기",empty:"자료 없음"})}</section>`}).join("");
-  return `<div class="wdhead"><button class="btn small ghost" ${prev?`data-week="${prev.month}-${prev.week}"`:"disabled"} aria-label="이전 주">‹</button><h2>${month}월 ${week}주</h2><button class="btn small ghost" ${next?`data-week="${next.month}-${next.week}"`:"disabled"} aria-label="다음 주">›</button></div>${S.canEdit?`<p class="hint">자료를 한 번 누르면 ▲▼ 버튼(또는 키보드 화살표)으로 놀이·인성 칸 사이를 옮길 수 있어요.</p>`:""}${secs}`;
+  return `<div class="wdhead"><button class="btn small ghost" ${prev?`data-week="${prev.month}-${prev.week}"`:"disabled"} aria-label="이전 주">‹</button><h2>${month}월 ${week}주</h2><button class="btn small ghost" ${next?`data-week="${next.month}-${next.week}"`:"disabled"} aria-label="다음 주">›</button></div>${lastYearBlock(month,week)}${S.canEdit?`<p class="hint">자료를 한 번 누르면 ▲▼ 버튼(또는 키보드 화살표)으로 놀이·인성 칸 사이를 옮길 수 있어요.</p>`:""}${secs}`;
 }
 function renderWeekly(){
   const wk=S.mats.filter(x=>x.kind==="weekly"&&x.year===S.year);
@@ -651,8 +664,8 @@ function renderSched(){
   const today=ymd(new Date());const all=schedDates();
   const list=all.filter(d=>S.showPast||d>=today);
   const past=all.filter(d=>d<today).length;
-  const tools=`<div class="wtools"><span class="hint">${all.length?`${dLabel(all[0])} ~ ${dLabel(all[all.length-1])} · ${all.length}일`:"아직 올린 진도표가 없어요"}</span><span style="margin-left:auto"></span>${past?`<button class="chip" data-act="togglePast" aria-pressed="${!!S.showPast}">지난 수업 ${past}일</button>`:""}${S.canEdit?`<button class="btn small" data-act="schedAdd">+ 한 줄 추가</button><button class="btn primary small" data-act="schedUpload">진도표 올리기</button>`:""}</div>`;
-  if(!all.length)return tools+`<div class="panel schedempty"><h3>진도표 올리는 방법</h3><p>엑셀·한글·구글 시트의 진도표에서 표를 그대로 복사해 <b>진도표 올리기</b>에 붙여 넣으세요. 첫 줄 제목으로 칸을 알아봐요.</p>${sampleTable()}<p class="hint">날짜와 학년반은 위 칸과 같으면 비워 둬도 돼요. 차시는 ‘3’, ‘3/10’, ‘3~4’ 모두 알아봐요. 같은 날짜를 다시 올리면 그날 진도가 새 내용으로 바뀌어요.</p></div>`;
+  const tools=`<div class="wtools"><span class="hint">${all.length?`${dLabel(all[0])} ~ ${dLabel(all[all.length-1])} · ${all.length}일`:"아직 올린 진도표가 없어요"}</span><span style="margin-left:auto"></span>${past?`<button class="chip" data-act="togglePast" aria-pressed="${!!S.showPast}">지난 수업 ${past}일</button>`:""}${S.canEdit?`<button class="btn small" data-act="schedAdd">+ 한 줄 추가</button><button class="btn small" data-act="schedUpload">진도표 올리기</button><button class="btn primary small" data-act="planner">진도 자동 계산</button>`:""}</div>`;
+  if(!all.length)return tools+`<div class="panel schedempty"><h3>진도표 만드는 두 가지 방법</h3><p><b>진도 자동 계산</b>: 반마다 시간표와 지금 진도만 넣으면 날짜별 진도표를 자동으로 만들어요. ${S.canEdit?`<button class="btn primary small" data-act="planner">진도 자동 계산 열기</button>`:""}</p><h3 style="font-size:1rem">또는 진도표 붙여 넣기</h3><p>엑셀·한글·구글 시트의 진도표에서 표를 그대로 복사해 <b>진도표 올리기</b>에 붙여 넣으세요. 첫 줄 제목으로 칸을 알아봐요.</p>${sampleTable()}<p class="hint">날짜와 학년반은 위 칸과 같으면 비워 둬도 돼요. 차시는 ‘3’, ‘3/10’, ‘3~4’ 모두 알아봐요. 같은 날짜를 다시 올리면 그날 진도가 새 내용으로 바뀌어요.</p></div>`;
   const weeks=new Map();list.forEach(d=>{const x=dateOf(d);const mon=new Date(x);mon.setDate(x.getDate()-((x.getDay()+6)%7));const k=ymd(mon);if(!weeks.has(k))weeks.set(k,[]);weeks.get(k).push(d)});
   return tools+[...weeks].map(([k,ds])=>`<section class="schedweek"><h3 class="weekh">${dLabel(k).replace(/ \(.\)/,"")} 주</h3>${ds.map(d=>`<div class="panel sday ${d===today?"today":""}"><div class="sdhead"><b>${dLabel(d)}</b>${d===today?`<span class="b char" style="background:var(--accent-soft);color:var(--accent)">오늘</span>`:""}${S.canEdit?`<button class="icon-btn" data-act="schedDelDay" data-date="${d}" style="margin-left:auto">이날 지우기</button>`:""}</div><div class="srows">${rowsOn(d).map((r,i)=>{const {t,u,lessons}=resolveRow(r,d);return `<div class="srow ${!t||!u?"bad":""}"><span class="num per2">${esc(r.period||"–")}교시</span><span class="clschip">${esc(r.cls||"")}</span><span class="grow">${esc(t?trackName(t):r.subject||"?")} · ${esc(u?unitLabel(t,u):(r.unitText||"단원?"))} · ${esc(lessons.length?lessons.join("·")+"차시":r.lessonText||"")}${!t||!u?` <span class="warnchip">${!t?"과목":"단원"} 확인</span>`:""}</span>${t&&u?`<button class="icon-btn" data-jumpl="${t.id}|${u.id}|${lessons[0]??0}">자료</button>`:""}${S.canEdit?`<button class="icon-btn" data-act="schedDelRow" data-date="${d}" data-i="${S.sched.find(x=>x.id===d).rows.indexOf(r)}" aria-label="이 줄 지우기">✕</button>`:""}</div>`}).join("")}</div></div>`).join("")}</section>`).join("");
 }
@@ -726,8 +739,112 @@ function openSchedAdd(){
 async function schedDelRow(d,i){const ex=S.sched.find(x=>x.id===d);if(!ex)return;const rows=ex.rows.filter((_,j)=>j!==i);
   try{if(rows.length)await S.db.collection("schedule").doc(d).set({date:d,rows,updatedAt:Date.now()});else await S.db.collection("schedule").doc(d).delete();toast("지웠어요")}catch(e){toast(errMsg(e))}}
 
+/* ---------- 진도 자동 계산 ---------- */
+const WD=["월","화","수","목","금"];
+const HOLI2026="1/1 신정\n2/16~2/18 설날\n3/2 삼일절 대체공휴일\n5/1 근로자의 날\n5/5 어린이날\n5/25 부처님오신날 대체공휴일\n6/3 지방선거\n8/17 광복절 대체공휴일\n9/24~9/26 추석\n10/5 개천절 대체공휴일\n10/9 한글날\n12/25 성탄절";
+function parseHolidays(text){
+  const set=new Set();
+  String(text||"").split("\n").forEach(l=>{
+    const r=l.match(/(\d{1,2})\s*[/.월]\s*(\d{1,2})\s*일?\s*(?:[~\-–]\s*(?:(\d{1,2})\s*[/.월]\s*)?(\d{1,2}))?/);if(!r)return;
+    const a=parseDateCell(`${r[1]}/${r[2]}`);if(!a)return;
+    let b=a;if(r[4])b=parseDateCell(`${r[3]||r[1]}/${r[4]}`)||a;
+    for(let d=dateOf(a);ymd(d)<=b;d.setDate(d.getDate()+1))set.add(ymd(d));
+  });
+  return set;
+}
+function lessonSeq(t){const us=unitsOf(t.id);const ord=t.semesters?[...us.filter(u=>semOf(u)===1),...us.filter(u=>semOf(u)===2)]:us;return ord.flatMap(u=>Array.from({length:u.lessons||0},(_,i)=>({u,n:i+1})))}
+function planCompute(p){
+  const hol=parseHolidays(p.holidays);const out=new Map();const summary=[];
+  for(const c of p.classes){
+    const t=trackById(c.track);if(!t||!c.slots?.length||!c.start)continue;
+    const seq=lessonSeq(t);let i=seq.findIndex(x=>x.u.id===c.unit&&x.n===Number(c.lesson||1));if(i<0)i=0;
+    let last=null,done=false;
+    for(let d=dateOf(c.start);ymd(d)<=p.end;d.setDate(d.getDate()+1)){
+      const ds=ymd(d),wd=d.getDay();if(wd===0||wd===6||hol.has(ds))continue;
+      if((d.getMonth()+1)<3)continue;
+      const slots=c.slots.filter(s=>s.day===wd).sort((a,b)=>a.period-b.period);
+      for(const s of slots){
+        if(i>=seq.length){done=true;break}
+        const x=seq[i++];last={date:ds,...x};
+        if(!out.has(ds))out.set(ds,[]);
+        out.get(ds).push({period:String(s.period),cls:c.cls,subject:t.subject,unitText:x.u.name,lessonText:String(x.n),track:t.id,unit:x.u.id,auto:true});
+      }
+    }
+    summary.push({c,t,last,done,left:seq.length-i});
+  }
+  return {rows:out,summary};
+}
+function openPlanner(){
+  const ts=tracksOfYear();
+  const saved=S.config.planner||{};
+  const today=ymd(new Date());const semEnd=new Date().getMonth()+1>=9||new Date().getMonth()+1<3?`${S.year}-12-31`:`${S.year}-07-31`;
+  let p={end:saved.end||semEnd,holidays:saved.holidays??HOLI2026,classes:(saved.classes||[]).map(c=>({...c,slots:[...(c.slots||[])]}))};
+  if(!p.classes.length)p.classes=[{cls:"",track:ts[0]?.id,slots:[],start:today,unit:unitsOf(ts[0]?.id)[0]?.id,lesson:1}];
+  const m=modal(`<h3>진도 자동 계산</h3><p class="hint">반마다 시간표(요일·교시)와 지금 진도를 넣으면, 쉬는 날을 빼고 날짜별 진도표를 만들어요. 행사로 수업이 빠지면 쉬는 날에 적고 다시 계산하면 뒤 진도가 밀려요.</p>
+    <div id="pcls" class="pcls"></div><button class="btn small" id="padd" style="align-self:flex-start">+ 반 추가</button>
+    <div class="row"><label class="f">언제까지<input id="pend" type="date" value="${p.end}"></label><label class="f" style="flex:2 1 300px">쉬는 날 (한 줄에 하나, 예: 11/17 수능 · 12/24~12/31 방학)<textarea id="phol" rows="5">${esc(p.holidays)}</textarea></label></div>
+    <div id="pprev"></div>
+    <div class="mfoot"><span class="hint" style="margin-right:auto">이미 올린 진도표의 직접 넣은 줄은 그대로 두고, 자동으로 만든 줄만 새로 바꿔요.</span><button class="btn ghost" id="pc">닫기</button><button class="btn primary" id="ps">진도표 만들기</button></div>`,true);
+  const box=m.querySelector("#pcls");
+  const unitOpts=(tid,sel)=>{const t=trackById(tid);return unitsOf(tid).map(u=>`<option value="${u.id}" ${u.id===sel?"selected":""}>${esc(unitLabel(t,u))}</option>`).join("")};
+  function draw(){
+    box.innerHTML=p.classes.map((c,ci)=>`<div class="pcard"><div class="row" style="align-items:flex-end">
+      <label class="f" style="flex:0 1 90px">학년반<input data-k="cls" data-i="${ci}" value="${esc(c.cls)}" placeholder="3-1"></label>
+      <label class="f" style="flex:1 1 130px">과목<select data-k="track" data-i="${ci}">${ts.map(t=>`<option value="${t.id}" ${t.id===c.track?"selected":""}>${esc(trackName(t))}</option>`).join("")}</select></label>
+      <label class="f" style="flex:1 1 130px">시작 날짜<input type="date" data-k="start" data-i="${ci}" value="${c.start||today}"></label>
+      <label class="f" style="flex:1 1 150px">그날 수업할 단원<select data-k="unit" data-i="${ci}">${unitOpts(c.track,c.unit)}</select></label>
+      <label class="f" style="flex:0 1 80px">차시<input type="number" min="1" max="40" data-k="lesson" data-i="${ci}" value="${c.lesson||1}"></label>
+      <button class="icon-btn" data-rmc="${ci}" aria-label="이 반 빼기">✕</button></div>
+      <div class="ttgrid" role="group" aria-label="${esc(c.cls||"이 반")} 시간표"><span></span>${WD.map(d=>`<b>${d}</b>`).join("")}${[1,2,3,4,5,6].map(pe=>`<b>${pe}</b>`+[1,2,3,4,5].map(dy=>{const on=c.slots.some(s=>s.day===dy&&s.period===pe);return `<button class="tt ${on?"on":""}" data-slot="${ci}|${dy}|${pe}" aria-pressed="${on}" aria-label="${WD[dy-1]} ${pe}교시"></button>`}).join("")).join("")}</div></div>`).join("");
+    preview();
+  }
+  function preview(){
+    const r=planCompute(p);let n=0;r.rows.forEach(v=>n+=v.length);
+    m.querySelector("#pprev").innerHTML=r.summary.length?`<div class="notice"><b>${n}차시</b>를 ${r.rows.size}일에 배정해요.<br>${r.summary.map(s=>`· ${esc(s.c.cls||"?")} ${esc(trackName(s.t))}: ${s.last?`${dLabel(s.last.date)}에 ${esc(unitLabel(s.t,s.last.u))} ${s.last.n}차시까지`:"배정할 수업이 없어요"}${s.done?` <span class="warnchip">단원이 다 끝나요</span>`:s.left?` · 남는 차시 ${s.left}개`:""}`).join("<br>")}</div>`:`<p class="hint">학년반을 넣고 시간표 칸을 눌러 수업 시간을 고르세요.</p>`;
+  }
+  box.addEventListener("input",e=>{const el=e.target;const i=+el.dataset.i,k=el.dataset.k;if(!k)return;p.classes[i][k]=k==="lesson"?Number(el.value):el.value;
+    if(k==="track"){p.classes[i].unit=unitsOf(el.value)[0]?.id;draw();return}if(k==="cls"){const t=ts.find(t=>t.grade===gradeOf(el.value));if(t&&t.id!==p.classes[i].track){p.classes[i].track=t.id;p.classes[i].unit=unitsOf(t.id)[0]?.id;draw();m.querySelector(`[data-k=cls][data-i="${i}"]`).focus();return}}preview()});
+  box.addEventListener("click",e=>{const s=e.target.closest("[data-slot]");if(s){const [ci,dy,pe]=s.dataset.slot.split("|").map(Number);const c=p.classes[ci];const j=c.slots.findIndex(x=>x.day===dy&&x.period===pe);j>=0?c.slots.splice(j,1):c.slots.push({day:dy,period:pe});draw();return}
+    const r=e.target.closest("[data-rmc]");if(r){p.classes.splice(+r.dataset.rmc,1);draw()}});
+  m.querySelector("#padd").onclick=()=>{const l=p.classes[p.classes.length-1];p.classes.push({cls:"",track:l?.track||ts[0]?.id,slots:[],start:l?.start||today,unit:l?.unit||unitsOf(ts[0]?.id)[0]?.id,lesson:l?.lesson||1});draw()};
+  m.querySelector("#pend").oninput=e=>{p.end=e.target.value;preview()};
+  m.querySelector("#phol").oninput=e=>{p.holidays=e.target.value;preview()};
+  m.querySelector("#pc").onclick=closeModal;
+  m.querySelector("#ps").onclick=async e=>{
+    const btn=e.currentTarget;const r=planCompute(p);if(!r.rows.size){toast("배정할 수업이 없어요. 시간표 칸을 골라 주세요");return}
+    btn.disabled=true;btn.textContent="만드는 중…";
+    const starts=p.classes.map(c=>c.start).filter(Boolean).sort();const from=starts[0]||today;
+    try{
+      await saveConfig({...S.config,planner:{end:p.end,holidays:p.holidays,classes:p.classes}});
+      const dates=new Set([...r.rows.keys(),...S.sched.filter(d=>d.id>=from&&d.id<=p.end&&(d.rows||[]).some(x=>x.auto)).map(d=>d.id)]);
+      const jobs=[...dates].map(d=>()=>{const ex=S.sched.find(x=>x.id===d);const keep=(ex?.rows||[]).filter(x=>!x.auto);const rows=[...keep,...(r.rows.get(d)||[])];
+        return rows.length?S.db.collection("schedule").doc(d).set({date:d,rows,updatedAt:Date.now()}):S.db.collection("schedule").doc(d).delete()});
+      let k=0;const w=async()=>{while(k<jobs.length){const j=jobs[k++];await j()}};await Promise.all([w(),w(),w(),w()]);
+      toast(`진도표 ${r.rows.size}일을 만들었어요`);closeModal();
+    }catch(err){toast(errMsg(err));btn.disabled=false;btn.textContent="진도표 만들기"}
+  };
+  draw();
+}
+/* ---------- 작년 이맘때 ---------- */
+function lastYearBlock(month,week){
+  const prev=S.mats.filter(x=>x.kind==="weekly"&&x.year===S.year-1&&x.month===month&&x.week===week);
+  if(!prev.length)return "";
+  const open=S.openGroups.has("ly|"+month+"|"+week);
+  const items=prev.map(x=>{const cur={kind:"weekly",year:S.year,month,week,cat:x.cat};const exists=S.mats.some(y=>y.id===docIdFor(cur,x.fileName||x.title));
+    return `<div class="lyrow">${matCard(x)}${S.canEdit?(exists?`<span class="hint">이미 있음</span>`:`<button class="btn small" data-carry="${x.id}">이번 주로</button>`):""}</div>`}).join("");
+  return `<section class="lastyear"><button class="lyhead" data-group="ly|${month}|${week}" aria-expanded="${open}"><span class="b" style="background:var(--note-soft);color:var(--note)">작년</span> ${S.year-1}년 ${month}월 ${week}주에 쓴 자료 <span class="hint num">${prev.length}개</span><span style="margin-left:auto">${open?"접기 ▴":"보기 ▾"}</span></button>${open?`<div class="rows">${items}</div>${S.canEdit&&prev.some(x=>!S.mats.some(y=>y.id===docIdFor({kind:"weekly",year:S.year,month,week,cat:x.cat},x.fileName||x.title)))?`<button class="btn small" data-carryall="${month}|${week}" style="align-self:flex-start">모두 이번 주로 가져오기</button>`:""}`:""}</section>`;
+}
+async function carryOver(list,month,week){
+  let n=0;
+  for(const x of list){const {id,...rest}=x;const d={...rest,year:S.year,month,week,updatedAt:Date.now(),carriedFrom:S.year-1};const nid=docIdFor(d,x.fileName||x.title);if(S.mats.some(y=>y.id===nid))continue;
+    try{await S.db.collection("materials").doc(nid).set(d);n++}catch(e){toast(errMsg(e));return}}
+  toast(n?`작년 자료 ${n}개를 ${month}월 ${week}주로 가져왔어요`:"가져올 새 자료가 없어요");
+}
+
 /* ---------- events ---------- */
 document.addEventListener("click",e=>{
+  const cy=e.target.closest("[data-carry]");if(cy){const x=S.mats.find(m=>m.id===cy.dataset.carry);if(x&&S.week)carryOver([x],S.week.month,S.week.week);return}
+  const ca=e.target.closest("[data-carryall]");if(ca){const [mo,wk]=ca.dataset.carryall.split("|").map(Number);carryOver(S.mats.filter(x=>x.kind==="weekly"&&x.year===S.year-1&&x.month===mo&&x.week===wk),mo,wk);return}
   const cp=e.target.closest("[data-copy]");if(cp){const u=cp.dataset.copy;try{navigator.clipboard.writeText(u).then(()=>toast("링크를 복사했어요"),()=>toast(u))}catch{toast(u)}return}
   const mv=e.target.closest("[data-move]");if(mv){moveMat(mv.dataset.id,mv.dataset.move);return}
   const grp=e.target.closest("[data-group]");if(grp){const g=grp.dataset.group;S.openGroups.has(g)?S.openGroups.delete(g):S.openGroups.add(g);renderMain();return}
@@ -752,6 +869,7 @@ document.addEventListener("click",e=>{
   else if(a==="driveSettings")openDriveSettings();
   else if(a==="schedUpload")openSchedUpload();
   else if(a==="schedAdd")openSchedAdd();
+  else if(a==="planner")openPlanner();
   else if(a==="togglePast"){S.showPast=!S.showPast;renderMain()}
   else if(a==="schedDelDay"){const d=el.dataset.date;if(el.dataset.armed){S.db.collection("schedule").doc(d).delete().then(()=>toast("지웠어요"),er=>toast(errMsg(er)))}else{el.dataset.armed="1";el.textContent="한 번 더 누르면 지워져요"}}
   else if(a==="schedDelRow")schedDelRow(el.dataset.date,Number(el.dataset.i));
@@ -1205,6 +1323,7 @@ setInterval(load,10*60*1000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.genAt&&Date.now()-S.lastLoad>5*60*1000)load()});
 S.lastLoad=Date.now();
 </script>
+
 
 </body>
 </html>
