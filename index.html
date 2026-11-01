@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#16201c">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316201c'/%3E%3Ctext x='32' y='43' font-size='30' text-anchor='middle' fill='%236cc5a8' font-family='serif' font-weight='700'%3E자%3C/text%3E%3C/svg%3E">
 
+
 <title>수업자료실</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -526,7 +527,7 @@ function renderHome(){
     return `<article class="tcard" style="${tc(t)}"><div style="display:flex;align-items:baseline;gap:10px"><h3>${esc(trackName(t))}</h3><span class="tstats" style="margin-left:auto"><span><b class="num">${ms.length-g}</b>자료</span><span><b class="num">${g}</b>웹게임</span></span></div>
       ${u?`<div class="now"><div class="grow"><span class="eyebrow">이어서 보기${t.semesters?` · ${semOf(u)}학기`:""}</span><br><b>${esc(u.name)}</b></div><button class="btn small" data-jump="${t.id}|${u.id}">열기 →</button></div>`:`<p class="hint">단원을 먼저 만들어 주세요.</p>`}
       ${strip}</article>`}).join("");
-  return `${hero}<div class="homegrid">${todayBlock()}${week}<section><div class="sec"><h2>교과</h2></div><div class="tracks">${tracks||`<p class="hint">교과가 없어요.</p>`}</div></section></div>`;
+  return `${hero}<div class="homegrid">${todayBlock()}<section><div class="sec"><h2>교과</h2></div><div class="tracks">${tracks||`<p class="hint">교과가 없어요.</p>`}</div></section>${week}</div>`;
 }
 function renderTrack(t){
   if(!t)return "";
