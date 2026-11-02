@@ -8,6 +8,7 @@
 
 
 
+
 <title>수업자료실</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -429,7 +430,7 @@ function go(v){location.hash=["home","weekly","sched"].includes(v)?v:"t-"+v}
 
 /* ---------- render ---------- */
 const DAYS=["일","월","화","수","목","금","토"];
-function render(){renderYear();renderTabs();renderMain();$("#addTop").hidden=!S.canEdit;$("#addFab").hidden=!S.canEdit}
+function render(){renderYear();renderTabs();renderMain();$("#addTop").hidden=!(S.canEdit||S.canUpload);$("#addFab").hidden=!(S.canEdit||S.canUpload)}
 function renderYear(){
   const years=[...new Set(S.config.tracks.map(t=>t.year).concat(S.mats.filter(m=>m.kind==="weekly").map(m=>m.year)).concat([S.year]))].sort();
   $("#yearSel").innerHTML=years.map(y=>`<option value="${y}" ${y===S.year?"selected":""}>${y}학년도</option>`).join("")+(S.canEdit?`<option value="new">+ 새 학년도</option>`:"");
@@ -499,7 +500,7 @@ function gallery(list,o={}){
     const stack=`<button class="card stack k-${kindOf(f)}" data-group="${esc(gid)}" aria-expanded="${open}" style="text-align:left;padding:0"><span class="cover"><span class="glyph">${glyphOf(e.key)}</span>${o.showCat&&f.cat?`<span class="catb b ${f.cat}">${CATS[f.cat].short}</span>`:""}<span class="klabel">${e.items.length}개 묶음</span></span><span class="cbody"><span class="ctitle">${esc(e.key)}</span><span class="cmeta"><span>${open?"접기 ▴":"펼쳐 보기 ▾"}</span><span class="num" style="margin-left:auto">${dates.length?fmtDate(Math.max(...dates)):""}</span></span></span></button>`;
     return stack+(open?`<div class="stackopen"><h4>${esc(e.key)} <span class="hint">${e.items.length}개</span><button class="icon-btn" data-group="${esc(gid)}" style="margin-left:auto">접기</button></h4><div class="rows">${e.items.map(matCard).join("")}</div></div>`:"");
   }).join("");
-  if(o.addPlace&&S.canEdit)html+=`<button class="addcard" data-act="add" data-place='${esc(JSON.stringify(o.addPlace))}'>+ ${esc(o.addLabel||"넣기")}</button>`;
+  if(o.addPlace&&(S.canEdit||S.canUpload))html+=`<button class="addcard" data-act="add" data-place='${esc(JSON.stringify(o.addPlace))}'>+ ${esc(o.addLabel||"넣기")}</button>`;
   if(!list.length&&!(o.addPlace&&S.canEdit))return `<p class="empty-lesson">${esc(o.empty||"자료가 없어요.")}</p>`;
   return `<div class="gallery ${o.tight?"tight":""}">${html}</div>`;
 }
@@ -862,7 +863,7 @@ document.addEventListener("click",e=>{
   if(el.dataset.week){const [m,w]=el.dataset.week.split("-").map(Number);S.week={month:m,week:w};renderMain();return}
   if(el.dataset.cat){S.cat=el.dataset.cat;renderMain();return}
   const a=el.dataset.act;
-  if(a==="add")openAdd(JSON.parse(el.dataset.place));
+  if(a==="add")(S.canEdit?openAdd:(window.openPublicUpload||openAdd))(JSON.parse(el.dataset.place));
   else if(a==="openNote")openNote(S.mats.find(x=>x.id===el.dataset.id));
   else if(a==="editMat")openEditMat(S.mats.find(x=>x.id===el.dataset.id));
   else if(a==="editUnits")openUnits(el.dataset.track,el.dataset.newsem?Number(el.dataset.newsem):null);
@@ -879,9 +880,10 @@ document.addEventListener("click",e=>{
 function saveUnits(){try{localStorage.setItem("units",JSON.stringify(S.unit));localStorage.setItem("sems",JSON.stringify(S.sem))}catch{}}
 $("#addFab").onclick=()=>$("#addTop").onclick();
 $("#addTop").onclick=()=>{
-  const cp=currentPlace();if(cp){openAdd(cp);return}
-  const t=tracksOfYear()[0];if(!t){openAddTrack();return}
-  const cw=curWeek();openAdd({kind:"weekly",year:S.year,month:cw.month,week:cw.week,cat:"play"});
+  const add=S.canEdit?openAdd:(window.openPublicUpload||openAdd);
+  const cp=currentPlace();if(cp){add(cp);return}
+  const t=tracksOfYear()[0];if(!t){if(S.canEdit)openAddTrack();return}
+  const cw=curWeek();add({kind:"weekly",year:S.year,month:cw.month,week:cw.week,cat:"play"});
 };
 let qT;$("#q").addEventListener("input",e=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=e.target.value.trim();renderTabs();renderMain()},180)});
 $("#yearSel").onchange=e=>{if(e.target.value==="new"){openAddTrack(S.year+1);renderYear();return}S.year=Number(e.target.value);try{localStorage.setItem("year",S.year)}catch{}const t=trackById(S.view);if(t&&t.year!==S.year)go("home");render()};
@@ -899,11 +901,11 @@ function currentPlace(){
   const t=trackById(S.view);if(!t)return null;const u=S.unit[t.id];if(!u)return null;const l=S.lesson[t.id+"|"+u];return {kind:"lesson",track:t.id,unit:u,lesson:l===undefined||l==="game"?0:l};
 }
 let dragDepth=0;
-document.addEventListener("dragenter",e=>{if(!S.canEdit||$("#ov")||!e.dataTransfer?.types?.includes("Files"))return;dragDepth++;const p=currentPlace();document.body.dataset.drop=p?(p.kind==="weekly"?`${p.month}월 ${p.week}주 ${CATS[p.cat].name}에 넣기`:`${unitLabel(trackById(p.track),unitsOf(p.track).find(x=>x.id===p.unit))} · ${p.lesson?p.lesson+"차시":"단원 공통"}에 넣기`):"자료 넣기"});
+document.addEventListener("dragenter",e=>{if(!(S.canEdit||S.canUpload)||$("#ov")||!e.dataTransfer?.types?.includes("Files"))return;dragDepth++;const p=currentPlace();document.body.dataset.drop=p?(p.kind==="weekly"?`${p.month}월 ${p.week}주 ${CATS[p.cat].name}에 넣기`:`${unitLabel(trackById(p.track),unitsOf(p.track).find(x=>x.id===p.unit))} · ${p.lesson?p.lesson+"차시":"단원 공통"}에 넣기`):"자료 넣기"});
 document.addEventListener("dragleave",()=>{if(--dragDepth<=0){dragDepth=0;delete document.body.dataset.drop}});
 document.addEventListener("dragover",e=>{if(document.body.dataset.drop)e.preventDefault()});
 document.addEventListener("drop",e=>{if(!document.body.dataset.drop)return;e.preventDefault();dragDepth=0;delete document.body.dataset.drop;const fs=[...(e.dataTransfer?.files||[])];if(!fs.length)return;
-  const p=currentPlace()||{kind:"weekly",year:S.year,month:curWeek().month,week:curWeek().week,cat:"play"};openAdd(p,fs)});
+  const p=currentPlace()||{kind:"weekly",year:S.year,month:curWeek().month,week:curWeek().week,cat:"play"};(S.canEdit?openAdd:(window.openPublicUpload||openAdd))(p,fs)});
 /* ---------- modals ---------- */
 function modal(html,wide){const r=$("#modalRoot");r.innerHTML=`<div class="overlay" id="ov"><div class="modal ${wide?"wide":""}" role="dialog" aria-modal="true">${html}</div></div>`;
   $("#ov").addEventListener("mousedown",e=>{if(e.target.id==="ov")closeModal()});return r.querySelector(".modal")}
@@ -1021,14 +1023,14 @@ const myErr=msg=>Object.assign(new Error(msg),{mine:true});
 let fileArgsOK=null;
 async function driveUpload(f,ext,place){
   if(!S.mcp)throw myErr("이 화면에서는 구글 드라이브에 올릴 수 없어요. claude.ai에 로그인한 상태로 열어 주세요.");
-  if(f.size>16*1024*1024)throw myErr("16MB보다 큰 파일이에요. 드라이브에 직접 올린 뒤 ‘드라이브에서 가져오기’나 링크로 넣어 주세요.");
+  if(f.size>16*1024*1024)throw myErr("16MB보다 큰 파일이에요. 공개 사이트(seoyuha.github.io/jaryosil)의 ‘자료 올리기’로 올리면 용량 걱정 없이 올라가요.");
   if(fileArgsOK===null){try{fileArgsOK=!!(await S.mcp.listTools()).fileArgs}catch{fileArgsOK=false}}
   const parentId=(place&&await uploadFolderFor(place))||driveCfg().upload;if(!parentId)throw myErr("업로드 폴더가 설정되지 않았어요.");
   const type=UPLOAD_MIME[ext]||f.type||"application/octet-stream";
   if(fileArgsOK===null){try{fileArgsOK=!!(await S.mcp.listTools()).fileArgs}catch{fileArgsOK=false}}
   const base={title:f.name,parentId,contentMimeType:type,disableConversionToGoogleType:true};
   let res;
-  const inline=async()=>{if(f.size>700*1024)throw myErr("이 화면에서는 700KB가 넘는 한글·PPT 파일을 올릴 수 없어요. 드라이브에 직접 올린 뒤 ‘드라이브에서 가져오기’로 넣어 주세요.");
+  const inline=async()=>{if(f.size>700*1024)throw myErr("이 화면에서는 700KB가 넘는 한글·PPT 파일을 올릴 수 없어요. 공개 사이트(seoyuha.github.io/jaryosil)의 ‘자료 올리기’로 올려 주세요.");
     const b64=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(f)});
     return S.mcp.callTool(DRIVE,"create_file",{...base,base64Content:b64},{cache:false})};
   if(fileArgsOK){try{res=await S.mcp.callTool(DRIVE,"create_file",{...base,base64Content:{$file:{data:f,name:f.name,type}}},{cache:false})}catch(e){if(e&&(e.code==="bad_request"||e.code==="capability_disabled"))res=await inline();else throw e}}
@@ -1282,7 +1284,8 @@ function openDriveImport(){
 
 /* ---------- 공개 사이트로 내보내기 ---------- */
 function snapshotData(){
-  return {year:S.year,config:{tracks:S.config.tracks,units:S.config.units},
+  const dv=S.config.drive||{};
+  return {year:S.year,config:{tracks:S.config.tracks,units:S.config.units,drive:{tracks:dv.tracks||{},play:dv.play||"",char:dv.char||"",upload:dv.upload||""}},
     materials:S.mats.map(({id,kind,year,month,week,cat,track,unit,lesson,title,type,ext,url,shareUrl,fileName,modifiedAt,body,assetId})=>({id,kind,year,month,week,cat,track,unit,lesson,title,type,ext,url:assetId?null:url,shareUrl,fileName,modifiedAt,body})),
     schedule:S.sched.map(d=>({id:d.id,rows:d.rows}))};
 }
@@ -1307,9 +1310,87 @@ hrefOf=x=>x.type==="note"?null:(x.url||null);
 function applyData(d){
   if(!d||!d.config)return false;
   S.config={tracks:d.config.tracks||[],units:d.config.units||{}};S.mats=d.materials||[];S.sched=d.schedule||[];
+  S.drive=d.config.drive||null;S.uploadOn=!!d.uploadOn;setUp();
   if(d.year&&!S.yearPicked)S.year=d.year;S.genAt=d.generatedAt||null;S.matsLoaded=true;S.schedLoaded=true;S.connErr=null;return true;
 }
-function stamp(){const el=$("#syncst");if(!el)return;el.removeAttribute("data-act");if(!S.genAt){el.textContent="";return}const d=new Date(S.genAt);el.textContent=`자료 기준 ${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`}
+function stamp(){const el=$("#syncst");if(!el)return;el.removeAttribute("data-act");el.removeAttribute("role");el.removeAttribute("title");
+  const d=S.genAt?new Date(S.genAt):null;el.innerHTML=(d?`<span>자료 기준 ${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}</span> `:"")+(S.uploadOn?`<button class="chip" id="upBtn" type="button" aria-pressed="${!!S.canUpload}">${S.canUpload?"✓ 자료 올리기 켜짐":"🔒 자료 올리기"}</button>`:"");
+  const b=$("#upBtn");if(b)b.onclick=e=>{e.stopPropagation();openKey()}}
+/* ---------- 공개 사이트에서 자료 올리기 ---------- */
+function getKey(){try{return localStorage.getItem("upKey")||""}catch{return ""}}
+S.upKey=getKey();
+function setUp(){S.canUpload=!!(S.upKey&&S.uploadOn&&S.drive)}
+async function api(body){
+  const r=await fetch(API_URL,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...body,key:S.upKey})});
+  const j=await r.json();if(j.badKey){S.upKey="";try{localStorage.removeItem("upKey")}catch{}setUp();stamp()}
+  if(j.error){const e=new Error(j.error);e.mine=true;throw e}return j;
+}
+function openKey(){
+  if(S.canUpload){
+    const m=modal(`<h3>자료 올리기</h3><p>이 기기에서 자료 올리기가 켜져 있어요. 단원·차시나 주를 열고 <b>+ 넣기</b>를 누르거나 파일을 화면에 끌어다 놓으면 돼요.</p><p class="hint">학교 공용 컴퓨터라면 다 쓴 뒤 끄기를 눌러 주세요.</p><div class="mfoot"><button class="btn ghost" id="kOff">이 기기에서 끄기</button><button class="btn primary" id="kOk">확인</button></div>`);
+    m.querySelector("#kOk").onclick=closeModal;
+    m.querySelector("#kOff").onclick=()=>{S.upKey="";try{localStorage.removeItem("upKey")}catch{}setUp();closeModal();render();stamp();toast("이 기기에서 자료 올리기를 껐어요")};return}
+  const m=modal(`<h3>자료 올리기 켜기</h3><p class="hint">앱스 스크립트에 정해 둔 비밀번호를 넣으면 이 기기에서 바로 자료를 올릴 수 있어요. 큰 파일도 구글 드라이브로 바로 올라가요.</p>
+    <label class="f">비밀번호<input id="kIn" type="password" autocomplete="current-password"></label><p class="hint" id="kMsg"></p>
+    <div class="mfoot"><button class="btn ghost" id="kC">닫기</button><button class="btn primary" id="kGo">켜기</button></div>`);
+  const inp=m.querySelector("#kIn"),msg=m.querySelector("#kMsg"),go=m.querySelector("#kGo");inp.focus();
+  m.querySelector("#kC").onclick=closeModal;
+  const run=async()=>{const v=inp.value.trim();if(!v)return;go.disabled=true;msg.textContent="확인하는 중…";
+    S.upKey=v;try{await api({action:"check"});try{localStorage.setItem("upKey",v)}catch{}setUp();closeModal();render();stamp();toast("자료 올리기를 켰어요")}
+    catch(e){S.upKey="";msg.textContent=e.mine?e.message:"확인하지 못했어요. 인터넷 연결을 확인해 주세요.";go.disabled=false}};
+  go.onclick=run;inp.onkeydown=e=>{if(e.key==="Enter")run()};
+}
+function targetOf(pl){
+  const dv=S.drive||{};
+  if(pl.kind==="lesson"){const uf=dv.tracks?.[pl.track]?.units?.[pl.unit];if(!uf)return {parentId:dv.upload,sub:""};
+    return {parentId:uf,sub:pl.lesson===0?"":pl.lesson==="game"?"웹게임":`${pl.lesson}차시`}}
+  const root=dv[pl.cat]||dv.play;if(!root)return {parentId:dv.upload,sub:""};
+  return {parentId:root,sub:`${pl.month}월${pl.week}주차`};
+}
+const MIME_BY_EXT={pdf:"application/pdf",hwp:"application/x-hwp",hwpx:"application/haansofthwpx",ppt:"application/vnd.ms-powerpoint",pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",doc:"application/msword",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",xls:"application/vnd.ms-excel",xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",zip:"application/zip",mp4:"video/mp4",mp3:"audio/mpeg",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg"};
+function putFile(url,f,mime,onp){return new Promise((ok,no)=>{const x=new XMLHttpRequest();x.open("PUT",url);x.setRequestHeader("Content-Type",mime);
+  x.upload.onprogress=e=>{if(e.lengthComputable)onp(Math.round(e.loaded/e.total*100))};
+  x.onload=()=>{if(x.status===200||x.status===201){try{ok(JSON.parse(x.responseText))}catch{no(new Error("업로드 결과를 읽지 못했어요"))}}else no(new Error("업로드가 멈췄어요 ("+x.status+")"))};
+  x.onerror=()=>no(new Error("업로드 중에 연결이 끊겼어요"));x.send(f)})}
+function fmtSize(n){return n>1048576?(n/1048576).toFixed(1)+"MB":Math.max(1,Math.round(n/1024))+"KB"}
+window.openPublicUpload=function(place,dropped){
+  if(!S.canUpload){openKey();return}
+  const p={...place};if(p.lesson==="game")p.lesson="game";
+  const m=modal(`<h3>자료 올리기</h3><div id="placeBox">${placeFields(p)}</div>
+    <label class="drop" id="drop" for="fileIn">여기에 파일을 끌어 놓거나 눌러서 고르세요<br><small>PDF · 한글 · PPT · 워드 · 엑셀 · 압축 · 영상, 한 번에 여러 개 · 용량 제한 없음</small></label><input id="fileIn" type="file" multiple hidden>
+    <p class="hint">파일은 구글 드라이브의 그 단원·차시(또는 그 주) 폴더에 바로 저장돼요. 같은 자리에 이름이 같은 자료가 있으면 마지막 수정 날짜가 더 최근일 때만 바꿔 넣어요.</p><div class="log" id="log"></div>
+    <div class="mfoot"><button class="btn ghost" id="mClose">닫기</button></div>`,true);
+  bindPlace(m,p);m.querySelector("#mClose").onclick=closeModal;
+  const drop=m.querySelector("#drop"),inp=m.querySelector("#fileIn");
+  inp.onchange=()=>up([...inp.files]);
+  drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("over")});
+  drop.addEventListener("dragleave",()=>drop.classList.remove("over"));
+  drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("over");up([...e.dataTransfer.files])});
+  if(dropped&&dropped.length)setTimeout(()=>up(dropped),0);
+  let busy=0;closeModal.before=()=>{if(busy)toast("올리던 파일은 계속 올라가요")};
+  async function up(files){
+    const log=m.querySelector("#log");const pl=readPlace(p);if(pl.kind==="weekly")pl.year=S.year;
+    for(const f of files){
+      const ext=(f.name.split(".").pop()||"").toLowerCase();const mime=f.type||MIME_BY_EXT[ext]||"application/octet-stream";
+      const line=document.createElement("div");line.textContent=`${f.name} (${fmtSize(f.size)}) … 준비 중`;log.append(line);
+      const id=docIdFor(pl,f.name);const old=S.mats.find(x=>x.id===id);
+      if(old&&(old.modifiedAt||0)>=f.lastModified){line.className="skip";line.textContent=`${f.name} — 이미 있는 자료가 같거나 더 최신이라 그대로 뒀어요.`;continue}
+      busy++;
+      try{
+        const tg=targetOf(pl);if(!tg.parentId)throw Object.assign(new Error("올릴 드라이브 폴더를 찾지 못했어요. 자료실에서 ‘공개 사이트에 반영’을 한 번 눌러 주세요."),{mine:true});
+        const ini=await api({action:"init",parentId:tg.parentId,sub:tg.sub,name:f.name,mime,size:f.size,modifiedTime:new Date(f.lastModified||Date.now()).toISOString(),origin:location.origin});
+        const file=await putFile(ini.uploadUrl,f,mime,pc=>{line.textContent=`${f.name} (${fmtSize(f.size)}) … ${pc}%`});
+        const doc={id,...pl,title:f.name.replace(/\.[^.]+$/,""),type:"google",ext,url:`https://drive.google.com/file/d/${file.id}/view`,fileName:f.name,size:f.size,modifiedAt:f.lastModified||Date.now(),source:"drive"};
+        await api({action:"done",material:doc});
+        S.mats=[...S.mats.filter(x=>x.id!==id),doc];
+        try{const c=JSON.parse(localStorage.getItem("siteData")||"null");if(c){c.materials=[...(c.materials||[]).filter(x=>x.id!==id),doc];localStorage.setItem("siteData",JSON.stringify(c))}}catch{}
+        line.className="ok";line.textContent=`${f.name} — ${old||ini.replaced?"더 최신 파일로 바꿨어요":"올렸어요"}`;
+      }catch(e){line.className="err";line.textContent=`${f.name} — ${e&&e.mine?e.message:(e&&e.message)||"올리지 못했어요"}`}
+      busy--;
+    }
+    renderMain();
+  };
+};
 async function load(){
   S.lastLoad=Date.now();
   if(!API_URL){S.connErr="아직 자료 주소가 연결되지 않았어요. index.html 파일 아래쪽의 API_URL에 앱스 스크립트 웹 앱 주소를 넣어 주세요.";S.matsLoaded=true;render();return}
