@@ -9,7 +9,7 @@
 const FOLDER_ID = '1Qr0ljDrgrUaqxS6B7WlzZ8M99xQBgDeC'; // 수업자료실 공개 데이터 폴더
 
 // ▼ 공개 사이트에서 자료를 올릴 때 쓸 비밀번호를 따옴표 안에 적으세요 (선생님만 아는 것으로)
-const UPLOAD_KEY = '';
+const UPLOAD_KEY = 'finel9932!';
 
 const PENDING_NAME = 'pending-uploads.json';
 
