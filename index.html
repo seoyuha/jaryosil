@@ -9,6 +9,7 @@
 
 
 
+
 <title>수업자료실</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1394,7 +1395,11 @@ window.openPublicUpload=function(place,dropped){
 async function load(){
   S.lastLoad=Date.now();
   if(!API_URL){S.connErr="아직 자료 주소가 연결되지 않았어요. index.html 파일 아래쪽의 API_URL에 앱스 스크립트 웹 앱 주소를 넣어 주세요.";S.matsLoaded=true;render();return}
-  try{const r=await fetch(API_URL,{cache:"no-store",redirect:"follow"});const d=await r.json();if(d.error)throw new Error(d.error);
+  try{
+    const [a,b]=await Promise.allSettled([fetch(API_URL,{cache:"no-store",redirect:"follow"}).then(r=>r.json()),fetch("data.json?"+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null)]);
+    const da=a.status==="fulfilled"&&a.value&&!a.value.error?a.value:null,db=b.status==="fulfilled"?b.value:null;
+    let d=da&&db?((db.generatedAt||0)>(da.generatedAt||0)?{...db,uploadOn:da.uploadOn}:da):(da||db);
+    if(!d)throw new Error(a.value?.error||"load");
     if(applyData(d)){try{localStorage.setItem("siteData",JSON.stringify(d))}catch{}}}
   catch(e){if(!S.mats.length){S.connErr="자료를 불러오지 못했어요. 인터넷 연결이나 앱스 스크립트 주소를 확인해 주세요.";S.matsLoaded=true}else S.connErr=null}
   render();stamp();
