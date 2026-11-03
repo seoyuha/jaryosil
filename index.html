@@ -11,6 +11,7 @@
 
 
 
+
 <title>수업자료실</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -426,9 +427,10 @@ function curWeek(){const d=new Date();const first=new Date(d.getFullYear(),d.get
 function schoolYearOf(d=new Date()){return d.getMonth()+1>=3?d.getFullYear():d.getFullYear()-1}
 
 /* ---------- routing ---------- */
-function readHash(){const h=location.hash.slice(1);if(h==="weekly"||h==="sched")S.view=h;else if(h.startsWith("t-")&&trackById(h.slice(2)))S.view=h.slice(2);else S.view="home"}
+const GAME_URL="https://seoyuha.github.io/package/";
+function readHash(){const h=location.hash.slice(1);if(h==="weekly"||h==="sched"||h==="game")S.view=h;else if(h.startsWith("t-")&&trackById(h.slice(2)))S.view=h.slice(2);else S.view="home"}
 window.addEventListener("hashchange",()=>{readHash();render()});
-function go(v){location.hash=["home","weekly","sched"].includes(v)?v:"t-"+v}
+function go(v){location.hash=["home","weekly","sched","game"].includes(v)?v:"t-"+v}
 
 /* ---------- render ---------- */
 const DAYS=["일","월","화","수","목","금","토"];
@@ -445,7 +447,7 @@ function renderTabs(){
     +(S.canEdit?`<button class="navbtn ghost" data-act="addTrack"><span class="dot" style="background:transparent;border:1px dashed var(--side-muted)"></span>교과 추가</button>`:"")
     +`<div class="navlabel">주간</div>`+nb("weekly","놀이·인성","play",wkCnt)
     +`<div class="navlabel">수업 계획</div>`+nb("sched","진도표","hwp",null)
-    +`<a class="navbtn" href="https://seoyuha.github.io/package/" target="_blank" rel="noopener" style="text-decoration:none"><span class="dot"></span>게임<span class="cnt" aria-hidden="true">↗</span></a>`;
+    +nb("game","게임","play",null);
 }
 function statusHTML(){
   if(S.connErr)return `<div class="status" data-tone="warn">${esc(S.connErr)}</div>`;
@@ -454,8 +456,9 @@ function statusHTML(){
 }
 function renderMain(){
   const m=$("#main");const t=trackById(S.view);
-  $("#crumb").innerHTML=S.q?`찾기 <small>‘${esc(S.q)}’</small>`:S.view==="home"?`오늘 <small>${S.year}학년도</small>`:S.view==="weekly"?`놀이·인성 <small>주간 자료</small>`:S.view==="sched"?`진도표 <small>${S.year}학년도</small>`:t?`${esc(trackName(t))}${t.semesters?` <small>› ${activeSem(t)}학기</small>`:""} <small>${S.year}학년도</small>`:"";
+  $("#crumb").innerHTML=S.q?`찾기 <small>‘${esc(S.q)}’</small>`:S.view==="home"?`오늘 <small>${S.year}학년도</small>`:S.view==="weekly"?`놀이·인성 <small>주간 자료</small>`:S.view==="sched"?`진도표 <small>${S.year}학년도</small>`:S.view==="game"?`게임 <small><a href="${GAME_URL}" target="_blank" rel="noopener">새 창에서 열기 ↗</a></small>`:t?`${esc(trackName(t))}${t.semesters?` <small>› ${activeSem(t)}학기</small>`:""} <small>${S.year}학년도</small>`:"";
   if(S.q){m.innerHTML=statusHTML()+renderSearch();return}
+  if(S.view==="game"){if(!m.querySelector("#gameFrame"))m.innerHTML=`<iframe id="gameFrame" src="${GAME_URL}" title="게임" allow="fullscreen; autoplay; clipboard-write" allowfullscreen style="display:block;width:100%;height:calc(100vh - 150px);min-height:560px;border:1px solid var(--line,#ddd);border-radius:12px;background:#fff"></iframe>`;return}
   if(S.view==="home")m.innerHTML=statusHTML()+renderHome();
   else if(S.view==="weekly")m.innerHTML=statusHTML()+renderWeekly();
   else if(S.view==="sched")m.innerHTML=statusHTML()+renderSched();
