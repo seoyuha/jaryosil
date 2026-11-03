@@ -10,6 +10,7 @@
 
 
 
+
 <title>수업자료실</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -443,7 +444,8 @@ function renderTabs(){
   $("#tabs").innerHTML=nb("home","오늘","accent",null)+`<div class="navlabel">교과</div>`+tracksOfYear().map(t=>nb(t.id,trackName(t),t.color,S.mats.filter(m=>m.kind==="lesson"&&m.track===t.id).length)).join("")
     +(S.canEdit?`<button class="navbtn ghost" data-act="addTrack"><span class="dot" style="background:transparent;border:1px dashed var(--side-muted)"></span>교과 추가</button>`:"")
     +`<div class="navlabel">주간</div>`+nb("weekly","놀이·인성","play",wkCnt)
-    +`<div class="navlabel">수업 계획</div>`+nb("sched","진도표","hwp",null);
+    +`<div class="navlabel">수업 계획</div>`+nb("sched","진도표","hwp",null)
+    +`<a class="navbtn" href="https://seoyuha.github.io/package/" target="_blank" rel="noopener" style="text-decoration:none"><span class="dot"></span>게임<span class="cnt" aria-hidden="true">↗</span></a>`;
 }
 function statusHTML(){
   if(S.connErr)return `<div class="status" data-tone="warn">${esc(S.connErr)}</div>`;
